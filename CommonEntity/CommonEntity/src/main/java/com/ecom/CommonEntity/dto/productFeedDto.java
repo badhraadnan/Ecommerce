@@ -3,12 +3,14 @@ package com.ecom.CommonEntity.dto;
 import com.ecom.CommonEntity.entity.Product;
 import lombok.*;
 
+import java.io.Serializable;
+
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 @Getter
 @Setter
-public class productFeedDto {
+public class productFeedDto implements Serializable {
     private Long productId;
     private String name;
     private Long catID;

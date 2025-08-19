@@ -10,6 +10,9 @@ import com.ecom.ProductService.service.ProductService;
 import com.ecom.commonRepository.dao.CategoryDAO;
 import com.ecom.commonRepository.dao.ProductDAO;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
@@ -27,6 +30,7 @@ public class ProductImpl implements ProductService {
 
     //Insert Product  --Admin Side
     @Override
+    @CacheEvict(value = {"filterProduct","productById","productFeed","filterByCategory"}, allEntries = true)
     public ResponseModel addProduct(ProductDto productDto) {
         try {
             Optional<Category> category = categoryDAO.categoryFindByIdAndStatus(
@@ -55,6 +59,7 @@ public class ProductImpl implements ProductService {
     @Override
     public ResponseModel getProducts() {
         try {
+
             List<Product> products = productDAO.getAllProductsByStatus(Status.ACTIVE);
 
             List<ProductDto> dto = products.stream()
@@ -76,6 +81,7 @@ public class ProductImpl implements ProductService {
 
     //Block Product  --Admin Side
     @Override
+    @CacheEvict(value = {"filterProduct","productById","productFeed","filterByCategory"}, allEntries = true)
     public ResponseModel blockProduct(long id) {
         try {
             Optional<Product> existProduct = productDAO.productFindById(id);
@@ -116,6 +122,7 @@ public class ProductImpl implements ProductService {
 
     //Update Product   --Admin Side
     @Override
+    @CachePut(value = "productById",key = "#productDto.productId")
     public ResponseModel updateProduct(ProductDto productDto) {
         try {
             Optional<Product> existProduct = productDAO.productFindByIdAndStatus(
@@ -154,9 +161,11 @@ public class ProductImpl implements ProductService {
 
 
     //Get Product ById   --Admin Side
+    @Cacheable(value = "productById",key = "#id")
     @Override
     public ResponseModel getProductByid(long id) {
         try {
+            System.out.println("method Called getProductByid()...");
             Optional<Product> existProduct = productDAO.productFindByIdAndStatus(id, Status.ACTIVE);
 
             if (existProduct.isPresent()) {
@@ -186,6 +195,7 @@ public class ProductImpl implements ProductService {
 
     //Delete Product  --Admin Side
     @Override
+    @CacheEvict(value = {"filterProduct","productById","productFeed","filterByCategory"}, allEntries = true)
     public ResponseModel deleteProduct(long id) {
         try {
             Optional<Product> existProduct = productDAO.productFindById(id);
@@ -204,8 +214,10 @@ public class ProductImpl implements ProductService {
 
     //Product Feed   --User Side
     @Override
+    @Cacheable(value = "productFeed",key = "#page + '_' + #size")
     public ResponseModel productFeed(int page, int size) {
         try {
+            System.out.println("method call -> productFeed()..");
             List<productFeedDto> feed = productDAO.getProductFeed(((page - 1) * size), size);
             if (feed.isEmpty()) {
                 return new ResponseModel(HttpStatus.NOT_FOUND, null, "Feed Not Exist");
@@ -218,15 +230,20 @@ public class ProductImpl implements ProductService {
     }
 
     //Product Filter By Category   --User Side
+    @Cacheable(value = "filterByCategory",key = "#id")
     @Override
     public ResponseModel ProductFilterByCategory(int id) {
+        System.out.println("method call -> ProductFilterByCategory()...");
         List<Object[]> products = productDAO.getProductByCategory(id);
         return new ResponseModel(HttpStatus.OK, products, "success");
     }
 
+
     //Product Filter Bt Name   --User Side
+    @Cacheable(value = "filterProduct",key = "#input")
     @Override
     public ResponseModel FilterByProductName(String input) {
+        System.out.println("method Call -> FilterByProductName()...");
         List<Object[]> products = productDAO.getFilterByProduct(input);
 
         if (products.isEmpty()) {

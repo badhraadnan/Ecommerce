@@ -5,11 +5,13 @@ import com.ecom.CommonEntity.entity.Category;
 
 import lombok.*;
 
+import java.io.Serializable;
+
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class CategoryDto {
+public class CategoryDto implements Serializable {
     private long catID;
     private String name;
     private Status status;

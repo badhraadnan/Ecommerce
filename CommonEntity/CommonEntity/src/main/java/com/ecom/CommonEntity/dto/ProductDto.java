@@ -5,6 +5,7 @@ import com.ecom.CommonEntity.entity.Category;
 import com.ecom.CommonEntity.entity.Product;
 import lombok.*;
 
+import java.io.Serializable;
 import java.time.LocalDateTime;
 
 @Builder
@@ -12,7 +13,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Getter
 @Setter
-public class ProductDto {
+public class ProductDto implements Serializable {
 
 
     private Long productId;

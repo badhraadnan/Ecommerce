@@ -9,6 +9,7 @@ import com.ecom.UserService.service.UserService;
 import com.ecom.UserService.utils.JWTUtil;
 import com.ecom.commonRepository.dao.UserDao;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -185,5 +186,25 @@ public class userServiceImpl implements UserService {
             return new ResponseModel(HttpStatus.NOT_FOUND,null,"User Credential Not Found");
         }
     }
+
+    @Override
+    public ResponseModel forgotPassword(UserDto userDto) {
+        Optional<User> existUser = userDAO.findByUserIdAndStatus(userDto.getUserId(),Status.ACTIVE);
+        if (existUser.isEmpty()){
+            return new ResponseModel(HttpStatus.BAD_REQUEST,null,"User Not Exist..");
+        }
+        User user = existUser.get();
+        if (encoder.matches(userDto.getPassword(), user.getPassword())) {
+            return new ResponseModel(HttpStatus.BAD_REQUEST, null, "New password cannot be same as old password");
+        }
+        UserDto.updateUser(userDto,user);
+
+        user.setPassword(encoder.encode(userDto.getPassword()));
+        User saveUser = userDAO.saveUser(user);
+
+        return new ResponseModel(HttpStatus.OK,saveUser,"success");
+
+    }
+
 
 }

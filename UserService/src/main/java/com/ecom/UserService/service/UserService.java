@@ -13,4 +13,5 @@ public interface UserService {
     ResponseModel userFindById();
     ResponseModel deleteUser();
     ResponseModel UserLogin(LoginDto loginDto);
+    ResponseModel forgotPassword(UserDto userDto);
 }

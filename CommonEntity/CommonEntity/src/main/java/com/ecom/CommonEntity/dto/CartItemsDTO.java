@@ -9,11 +9,13 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.io.Serializable;
+
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
 @Data
-public class CartItemsDTO {
+public class CartItemsDTO implements Serializable {
 
     private Long cartItemId;
     private Long cartId;

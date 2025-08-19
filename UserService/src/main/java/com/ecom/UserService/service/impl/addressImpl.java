@@ -10,6 +10,7 @@ import com.ecom.commonRepository.dao.AddressDAO;
 import com.ecom.commonRepository.dao.MasterDao;
 import com.ecom.commonRepository.dao.UserDao;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -195,6 +196,7 @@ public class addressImpl implements AddressService {
     //GEY COUNTRY BY ID  ----User Side
     @Override
     public ResponseModel getAllCountryById(int id) {
+        System.out.println("method called..");
         List<Country> countries=masterDAO.getCountryRepo().findAllByCountryId(id);
         if(countries.isEmpty()){
             return new ResponseModel(HttpStatus.NOT_FOUND,null,"Country Not Found");

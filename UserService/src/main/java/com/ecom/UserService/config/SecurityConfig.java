@@ -40,6 +40,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(request -> request
                         .requestMatchers("api/user/service/login").permitAll()
                         .requestMatchers("api/user/service/signup").permitAll()
+                        .requestMatchers("api/user/service/forgot-password").permitAll()
                         .anyRequest().authenticated()
                 )
                 .userDetailsService(userDetailsService)

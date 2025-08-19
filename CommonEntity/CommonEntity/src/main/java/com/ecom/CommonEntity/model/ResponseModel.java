@@ -3,8 +3,10 @@ package com.ecom.CommonEntity.model;
 import lombok.Data;
 import org.springframework.http.HttpStatus;
 
+import java.io.Serializable;
+
 @Data
-public class ResponseModel {
+public class ResponseModel implements Serializable {
 
     private int code;
     private String status;

@@ -49,4 +49,8 @@ public class UserController {
         return userService.UserLogin(loginDto);
     }
 
+    @PutMapping("/forgot-password")
+    public ResponseModel forgotPassword(@RequestBody UserDto userDto){
+        return userService.forgotPassword(userDto);
+    }
 }
