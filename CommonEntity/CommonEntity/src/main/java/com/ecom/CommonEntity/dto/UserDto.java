@@ -1,5 +1,6 @@
 package com.ecom.CommonEntity.dto;
 
+import com.ecom.CommonEntity.Enum.Role;
 import com.ecom.CommonEntity.Enum.Status;
 import com.ecom.CommonEntity.entity.Address;
 import com.ecom.CommonEntity.entity.User;
@@ -31,6 +32,8 @@ public class UserDto {
 
     private String gender;
 
+    private Role role;
+
     private Status status;
 
     public static User toEntity(UserDto userDto){
@@ -41,6 +44,7 @@ public class UserDto {
                 .password(userDto.getPassword())
                 .mobile(userDto.getMobile())
                 .gender(userDto.getGender())
+                .role(userDto.getRole())
                 .status(Status.ACTIVE)
                 .build();
     }
@@ -54,6 +58,7 @@ public class UserDto {
                 .password(user.getPassword())
                 .mobile(user.getMobile())
                 .gender(user.getGender())
+                .role(user.getRole())
                 .status(user.getStatus())
                 .build();
     }

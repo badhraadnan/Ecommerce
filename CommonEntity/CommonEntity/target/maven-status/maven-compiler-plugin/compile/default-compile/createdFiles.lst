@@ -30,6 +30,7 @@ com\ecom\CommonEntity\dto\cartReminderDto.class
 com\ecom\CommonEntity\dto\CartItemsDTO.class
 com\ecom\CommonEntity\entity\Orders.class
 com\ecom\CommonEntity\entity\OrderItem$OrderItemBuilder.class
+com\ecom\CommonEntity\Enum\Role.class
 com\ecom\CommonEntity\dto\LoginDto.class
 com\ecom\CommonEntity\model\ResponseModel.class
 com\ecom\CommonEntity\entity\State.class

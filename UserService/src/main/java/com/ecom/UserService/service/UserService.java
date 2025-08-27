@@ -6,12 +6,9 @@ import com.ecom.CommonEntity.dto.UserDto;
 import com.ecom.CommonEntity.model.ResponseModel;
 
 public interface UserService {
-    ResponseModel SignupUser(UserDto userDto);
     ResponseModel getAllUsers();
     ResponseModel updateUser(UserDto userDto);
-    ResponseModel blockUser();
-    ResponseModel userFindById();
-    ResponseModel deleteUser();
-    ResponseModel UserLogin(LoginDto loginDto);
-    ResponseModel forgotPassword(UserDto userDto);
+    ResponseModel blockUser(Long userId);
+    ResponseModel userFindById(Long userId);
+    ResponseModel deleteUser(Long userId);
 }

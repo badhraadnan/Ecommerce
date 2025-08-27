@@ -1,21 +1,14 @@
 package com.ecom.UserService.service.impl;
 
 import com.ecom.CommonEntity.Enum.Status;
-import com.ecom.CommonEntity.dto.LoginDto;
 import com.ecom.CommonEntity.dto.UserDto;
 import com.ecom.CommonEntity.entity.User;
 import com.ecom.CommonEntity.model.ResponseModel;
 import com.ecom.UserService.service.UserService;
-import com.ecom.UserService.utils.JWTUtil;
 import com.ecom.commonRepository.dao.UserDao;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.crypto.password.PasswordEncoder;
+
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -28,48 +21,15 @@ public class userServiceImpl implements UserService {
     @Autowired
     private UserDao userDAO;
 
-    @Autowired
-    private AuthenticationManager authenticationManager;
+//    @Autowired
+//    private AuthenticationManager authenticationManager;
+//
+//    @Autowired
+//    private PasswordEncoder encoder;
 
-    @Autowired
-    private PasswordEncoder encoder;
+//    @Autowired
+//    private JWTUtil jwtUtil;
 
-    @Autowired
-    private JWTUtil jwtUtil;
-
-    //Signup User  --User Side
-    @Override
-    public ResponseModel SignupUser(UserDto userDto) {
-        try {
-            Optional<User> existUser = userDAO.findByEmailORMobile(userDto.getEmail(), userDto.getMobile());
-
-
-
-            if (existUser.isEmpty()) {
-                User user = UserDto.toEntity(userDto);
-                user.setPassword(encoder.encode(user.getPassword()));
-                User savedUser = userDAO.saveUser(user);
-
-                return new ResponseModel(
-                        HttpStatus.OK,
-                        UserDto.toDto(savedUser),
-                        "User added successfully"
-                );
-            } else {
-                return new ResponseModel(
-                        HttpStatus.BAD_REQUEST,
-                        null,
-                        "User with this email or mobile already exists"
-                );
-            }
-        } catch (Exception e) {
-            return new ResponseModel(
-                    HttpStatus.INTERNAL_SERVER_ERROR,
-                    null,
-                    "An error occurred while saving user "
-            );
-        }
-    }
 
 
 
@@ -114,10 +74,9 @@ public class userServiceImpl implements UserService {
 
     //Block User  --Admin Side
     @Override
-    public ResponseModel blockUser() {
+    public ResponseModel blockUser(Long userId) {
         try {
-            String email = SecurityContextHolder.getContext().getAuthentication().getName();
-            Optional<User> existUser = userDAO.findByEmail(email);
+            Optional<User> existUser = userDAO.userFindById(userId);
 
             if (existUser.isPresent()) {
                 User user = existUser.get();
@@ -139,10 +98,9 @@ public class userServiceImpl implements UserService {
 
     //Find User By Id  --User Side
     @Override
-    public ResponseModel userFindById() {
+    public ResponseModel userFindById(Long userId) {
         try {
-            String email = SecurityContextHolder.getContext().getAuthentication().getName();
-            Optional<User> existUser = userDAO.findByEmailAndStatus(email, Status.ACTIVE);
+            Optional<User> existUser = userDAO.findByUserIdAndStatus(userId, Status.ACTIVE);
             if (existUser.isPresent()) {
                 User user = existUser.get();
 
@@ -157,12 +115,11 @@ public class userServiceImpl implements UserService {
 
     //Delete User  --User Side
     @Override
-    public ResponseModel deleteUser() {
+    public ResponseModel deleteUser(Long userId) {
        try {
-           String email = SecurityContextHolder.getContext().getAuthentication().getName();
-           Optional<User> existUser = userDAO.findByEmail(email);
+           Optional<User> existUser = userDAO.userFindById(userId);
            if (existUser.isPresent()) {
-               userDAO.deleteUser(email);
+               userDAO.deleteUser(userId);
                return new ResponseModel(HttpStatus.OK, null, "User Deleted Successfully");
            } else {
                return new ResponseModel(HttpStatus.NOT_FOUND, null, "User Not Exist");
@@ -173,38 +130,7 @@ public class userServiceImpl implements UserService {
        }
     }
 
-    //Login User  --User Side
-    @Override
-    public ResponseModel UserLogin(LoginDto loginDto) {
-//        Optional<User> existUser=userDAO.UserLoginByEmailAndPassword(email, password, Status.ACTIVE);
-        Authentication authentication=authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(loginDto.getEmail(),loginDto.getPassword()));
-        if (authentication != null){
 
-            return new ResponseModel(HttpStatus.OK, jwtUtil.generateKey(loginDto.getEmail()),"User Login Successfully");
-        }
-        else {
-            return new ResponseModel(HttpStatus.NOT_FOUND,null,"User Credential Not Found");
-        }
-    }
-
-    @Override
-    public ResponseModel forgotPassword(UserDto userDto) {
-        Optional<User> existUser = userDAO.findByUserIdAndStatus(userDto.getUserId(),Status.ACTIVE);
-        if (existUser.isEmpty()){
-            return new ResponseModel(HttpStatus.BAD_REQUEST,null,"User Not Exist..");
-        }
-        User user = existUser.get();
-        if (encoder.matches(userDto.getPassword(), user.getPassword())) {
-            return new ResponseModel(HttpStatus.BAD_REQUEST, null, "New password cannot be same as old password");
-        }
-        UserDto.updateUser(userDto,user);
-
-        user.setPassword(encoder.encode(userDto.getPassword()));
-        User saveUser = userDAO.saveUser(user);
-
-        return new ResponseModel(HttpStatus.OK,saveUser,"success");
-
-    }
 
 
 }

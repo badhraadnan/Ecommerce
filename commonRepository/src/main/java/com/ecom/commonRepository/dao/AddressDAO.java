@@ -40,7 +40,7 @@ public class AddressDAO {
     }
 
 
-    public List<Address> findEmailAndStatus(String email,Status status){
-        return masterDAO.getAddressRepo().findByUserEmailAndUserStatus(email,status);
+    public List<Address> findUserByIdAndStatus(Long userId,Status status){
+        return masterDAO.getAddressRepo().findByUserIdAndUserStatus(userId,status);
     }
 }

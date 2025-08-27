@@ -41,9 +41,9 @@ public interface ProductRepo extends JpaRepository<Product, Long> {
     @Query(value = "SELECT p.productid, p.name, " +
             "p.price, p.qty, p.imageurl " +
             "FROM product AS p " +
-            "WHERE p.status = 'ACTIVE'  AND p.name LIKE %?1%",
+            "WHERE p.status = 'ACTIVE'  AND p.name LIKE %:input%",
             nativeQuery = true)
-    List<Object[]> filterByProduct(String input);
+    List<Object[]> filterByProduct(@Param("input") String input);
 
 
 

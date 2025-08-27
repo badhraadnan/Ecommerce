@@ -28,10 +28,10 @@ public interface UserRepository extends JpaRepository<User,Long> {
 
     Optional<User> findByEmailOrMobile(String email,String mobile);
 
-    @Modifying
-    @Transactional
-    @Query("DELETE FROM User u WHERE u.email = :email")
-    void deleteUser(@Param("email") String email);
+//    @Modifying
+//    @Transactional
+//    @Query("DELETE FROM User u WHERE u.email = :email")
+//    void deleteUser(@Param("email") String email);
 
 
     Optional<User> findByEmailAndPasswordAndStatus(String email,String password,Status status);

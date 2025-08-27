@@ -16,6 +16,7 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 		"com.ecom.commonRepository.repo",
 		"com.ecom.CommonEntity"
 })
+
 @SpringBootApplication
 public class Application {
 

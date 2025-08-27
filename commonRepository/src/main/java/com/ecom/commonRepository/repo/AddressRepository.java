@@ -18,8 +18,8 @@ public interface AddressRepository extends JpaRepository<Address,Long> {
 
     Optional<Address> findByUser_UserIdAndStatus(long userId, Status status);
 
-    @Query("SELECT a FROM Address a WHERE a.user.email = :email AND a.user.status = :status")
-    List<Address> findByUserEmailAndUserStatus(@Param("email") String email,
+    @Query("SELECT a FROM Address a WHERE a.user.userId = :userId AND a.user.status = :status")
+    List<Address> findByUserIdAndUserStatus(@Param("userId") Long userId,
                                                    @Param("status") Status status);
     //With SQL
 

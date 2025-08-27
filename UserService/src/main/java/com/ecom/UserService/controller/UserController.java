@@ -14,43 +14,30 @@ public class UserController {
     @Autowired
     private UserService userService;
 
-    @PostMapping("/signup")
-    public ResponseModel saveUser(@RequestBody UserDto userDto){
-    return userService.SignupUser(userDto);
-    }
 
-    @GetMapping("/")
+    @GetMapping("/all-user")
     public ResponseModel getAllUsers(){
         return userService.getAllUsers();
     }
 
-    @PutMapping("/")
+    @PutMapping("/update")
     public ResponseModel updateUser(@RequestBody UserDto userDto){
         return userService.updateUser(userDto);
     }
 
-    @PatchMapping("/block")
-    public ResponseModel blockUser(){
-        return userService.blockUser();
+    @PatchMapping("/block/{userId}")
+    public ResponseModel blockUser(@RequestParam Long userId){
+        return userService.blockUser(userId);
     }
 
-    @GetMapping("/get")
-    public ResponseModel getUserById(){
-        return userService.userFindById();
+    @GetMapping("/get/{userId}")
+    public ResponseModel getUserById(@RequestParam Long userId){
+        return userService.userFindById(userId);
     }
 
-    @DeleteMapping("/delete")
-    public ResponseModel deleteUser(){
-        return userService.deleteUser();
+    @DeleteMapping("/delete/{userId}")
+    public ResponseModel deleteUser(@RequestParam Long userId){
+        return userService.deleteUser(userId);
     }
 
-    @PostMapping("/login")
-    public ResponseModel LoginUser(@RequestBody LoginDto loginDto){
-        return userService.UserLogin(loginDto);
-    }
-
-    @PutMapping("/forgot-password")
-    public ResponseModel forgotPassword(@RequestBody UserDto userDto){
-        return userService.forgotPassword(userDto);
-    }
 }

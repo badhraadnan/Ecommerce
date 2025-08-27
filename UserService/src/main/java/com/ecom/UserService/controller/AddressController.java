@@ -23,9 +23,9 @@ public class AddressController {
         return addressService.getAllAddress();
     }
 
-    @GetMapping("/id")
-    public ResponseModel getAddressByID(){
-        return addressService.getAddressByUserId();
+    @GetMapping("/id/{userId}")
+    public ResponseModel getAddressByID(@RequestParam Long userId){
+        return addressService.getAddressByUserId(userId);
     }
 
     @PutMapping("/")

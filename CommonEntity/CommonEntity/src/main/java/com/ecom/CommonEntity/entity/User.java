@@ -1,5 +1,6 @@
 package com.ecom.CommonEntity.entity;
 
+import com.ecom.CommonEntity.Enum.Role;
 import com.ecom.CommonEntity.Enum.Status;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
@@ -31,6 +32,9 @@ public class User {
     private String mobile;
 
     private String gender;
+
+    @Enumerated(EnumType.STRING)
+    private Role role;
 
     @OneToMany(mappedBy = "user",fetch = FetchType.LAZY)
     @JsonIgnore

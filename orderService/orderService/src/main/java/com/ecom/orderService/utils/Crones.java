@@ -29,7 +29,7 @@ public class Crones {
     @Autowired
     private ObjectMapper mapper;
 
-    @Scheduled(cron = "0 */10 * * * * ")
+    @Scheduled(cron = "0 0 */50 * * * ")
     public void cartReminder() {
         try {
 

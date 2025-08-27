@@ -38,8 +38,8 @@ public class UserDao {
         return masterDao.getUserRepository().findById(id);
     }
 
-    public void deleteUser(String email){
-        masterDao.getUserRepository().deleteUser(email);
+    public void deleteUser(Long userId){
+        masterDao.getUserRepository().deleteById(userId);
     }
 
     public Optional<User> findByEmailORMobile(String email,String mobile){

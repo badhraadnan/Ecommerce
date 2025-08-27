@@ -10,9 +10,7 @@ import com.ecom.commonRepository.dao.AddressDAO;
 import com.ecom.commonRepository.dao.MasterDao;
 import com.ecom.commonRepository.dao.UserDao;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -86,9 +84,8 @@ public class addressImpl implements AddressService {
 
     //GET ADDRESS BY ID  ----User Side
     @Override
-    public ResponseModel getAddressByUserId() {
-        String email = SecurityContextHolder.getContext().getAuthentication().getName();
-        List<Address> existAdd=addressDAO.findEmailAndStatus(email,Status.ACTIVE);
+    public ResponseModel getAddressByUserId(Long userId) {
+        List<Address> existAdd=addressDAO.findUserByIdAndStatus(userId,Status.ACTIVE);
         if (existAdd != null){
             List<AddressDto> dto= existAdd.stream()
                     .map(AddressDto::toDto)

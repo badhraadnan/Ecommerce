@@ -6,7 +6,10 @@ import com.ecom.CommonEntity.model.ResponseModel;
 public interface AddressService {
     ResponseModel saveAddress(AddressDto addressDto);
     ResponseModel getAllAddress();
-    ResponseModel getAddressByUserId();
+
+    //GET ADDRESS BY ID  ----User Side
+    ResponseModel getAddressByUserId(Long userId);
+
     ResponseModel updateAddress(AddressDto addressDto);
 
     ResponseModel UserDetailsWithAddress();

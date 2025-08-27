@@ -1,5 +1,6 @@
 package com.ecom.CommonEntity.dto;
 
+import com.ecom.CommonEntity.Enum.Role;
 import lombok.Data;
 
 @Data
