@@ -21,16 +21,6 @@ public class userServiceImpl implements UserService {
     @Autowired
     private UserDao userDAO;
 
-//    @Autowired
-//    private AuthenticationManager authenticationManager;
-//
-//    @Autowired
-//    private PasswordEncoder encoder;
-
-//    @Autowired
-//    private JWTUtil jwtUtil;
-
-
 
 
     //Get All Users  --Admin User

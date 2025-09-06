@@ -122,9 +122,10 @@ public class ProductImpl implements ProductService {
 
     //Update Product   --Admin Side
     @Override
-    @CachePut(value = "productById",key = "#productDto.productId")
+    @CachePut(value = "productFeed")
     public ResponseModel updateProduct(ProductDto productDto) {
         try {
+            System.out.println("Product Updated...");
             Optional<Product> existProduct = productDAO.productFindByIdAndStatus(
                     productDto.getProductId(), Status.ACTIVE);
 
