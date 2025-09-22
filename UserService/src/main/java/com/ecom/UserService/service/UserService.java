@@ -9,6 +9,6 @@ public interface UserService {
     ResponseModel getAllUsers();
     ResponseModel updateUser(UserDto userDto);
     ResponseModel blockUser(Long userId);
-    ResponseModel userFindById(Long userId);
+    ResponseModel userFindById(long userId);
     ResponseModel deleteUser(Long userId);
 }

@@ -4,6 +4,7 @@ import com.ecom.CommonEntity.Enum.Status;
 import com.ecom.CommonEntity.dto.UserDto;
 import com.ecom.CommonEntity.entity.User;
 import com.ecom.CommonEntity.model.ResponseModel;
+import com.ecom.UserService.exception.UserNotFoundException;
 import com.ecom.UserService.service.UserService;
 import com.ecom.commonRepository.dao.UserDao;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -88,19 +89,16 @@ public class userServiceImpl implements UserService {
 
     //Find User By Id  --User Side
     @Override
-    public ResponseModel userFindById(Long userId) {
-        try {
+    public ResponseModel userFindById(long userId) {
+
             Optional<User> existUser = userDAO.findByUserIdAndStatus(userId, Status.ACTIVE);
             if (existUser.isPresent()) {
                 User user = existUser.get();
 
                 return new ResponseModel(HttpStatus.OK, UserDto.toDto(user), "User Found");
             }
-            return new ResponseModel(HttpStatus.NOT_FOUND, null, "User Not Found");
-        } catch (Exception e) {
-            e.printStackTrace();
-            return new ResponseModel(HttpStatus.INTERNAL_SERVER_ERROR, null, "User Not Founded Due to Some Error");
-        }
+            throw new UserNotFoundException("User Not Exist");
+
     }
 
     //Delete User  --User Side

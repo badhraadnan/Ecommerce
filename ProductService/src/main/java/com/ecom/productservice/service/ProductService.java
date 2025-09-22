@@ -2,6 +2,7 @@ package com.ecom.productservice.service;
 
 import com.ecom.CommonEntity.dto.ProductDto;
 import com.ecom.CommonEntity.model.ResponseModel;
+import com.ecom.CommonEntity.model.pageModel;
 
 public interface ProductService {
 
@@ -9,10 +10,10 @@ public interface ProductService {
     ResponseModel getProducts();
     ResponseModel blockProduct(long id);
     ResponseModel updateProduct(ProductDto productDto);
-    ResponseModel getProductByid(long id);
+    pageModel getProductByid(long id);
     ResponseModel deleteProduct(long id);
 
-    ResponseModel productFeed(int page, int size);
+    pageModel productFeed(int page, int size);
     ResponseModel ProductFilterByCategory(int id);
 
     ResponseModel FilterByProductName(String input);

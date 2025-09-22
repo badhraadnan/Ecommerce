@@ -15,6 +15,7 @@ com\ecom\CommonEntity\entity\User$UserBuilder.class
 com\ecom\CommonEntity\entity\CartItem.class
 com\ecom\CommonEntity\entity\User.class
 com\ecom\CommonEntity\entity\Orders$OrdersBuilder.class
+com\ecom\CommonEntity\model\pageModel.class
 com\ecom\CommonEntity\dto\OrderDto.class
 com\ecom\CommonEntity\dto\CategoryDto.class
 com\ecom\CommonEntity\entity\Category$CategoryBuilder.class

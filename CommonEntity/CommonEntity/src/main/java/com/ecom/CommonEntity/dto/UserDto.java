@@ -82,21 +82,6 @@ public class UserDto {
         if (userDto.getGender() != null) {
             user.setGender(userDto.getGender());
         }
-//        if (userDto.getAddress() != null) {
-//            user.setAddress(userDto.getAddress());
-//        }
-//        if (userDto.getCity() != null) {
-//            user.setCity(userDto.getCity());
-//        }
-//        if (userDto.getState() != null) {
-//            user.setState(userDto.getState());
-//        }
-//        if (userDto.getCountry() != null) {
-//            user.setCountry(userDto.getCountry());
-//        }
-//        if (userDto.getZipCode() != null) {
-//            user.setZipCode(userDto.getZipCode());
-//        }
 
         user.setUpdatedAt(LocalDateTime.now());
     }

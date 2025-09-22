@@ -37,30 +37,18 @@ public class authService {
         try {
             Optional<User> existUser = userDAO.findByEmailORMobile(userDto.getEmail(), userDto.getMobile());
 
-
-
             if (existUser.isEmpty()) {
                 User user = UserDto.toEntity(userDto);
                 user.setPassword(encoder.encode(user.getPassword()));
                 User savedUser = userDAO.saveUser(user);
 
-                return new ResponseModel(
-                        HttpStatus.OK,
-                        UserDto.toDto(savedUser),
-                        "User added successfully"
-                );
+                return new ResponseModel(HttpStatus.OK, UserDto.toDto(savedUser), "User added successfully");
             } else {
-                return new ResponseModel(
-                        HttpStatus.BAD_REQUEST,
-                        null,
-                        "User with this email or mobile already exists"
+                return new ResponseModel(HttpStatus.BAD_REQUEST, null, "User with this email or mobile already exists"
                 );
             }
         } catch (Exception e) {
-            return new ResponseModel(
-                    HttpStatus.INTERNAL_SERVER_ERROR,
-                    null,
-                    "An error occurred while saving user "
+            return new ResponseModel(HttpStatus.INTERNAL_SERVER_ERROR,null,"An error occurred while saving user "
             );
         }
     }
@@ -84,7 +72,6 @@ public class authService {
         }
     }
 
-
     public ResponseModel forgotPassword(UserDto userDto) {
         Optional<User> existUser = userDAO.findByUserIdAndStatus(userDto.getUserId(), Status.ACTIVE);
         if (existUser.isEmpty()){
@@ -102,4 +89,5 @@ public class authService {
         return new ResponseModel(HttpStatus.OK,saveUser,"success");
 
     }
+
 }

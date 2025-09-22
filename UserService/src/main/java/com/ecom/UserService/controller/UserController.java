@@ -4,6 +4,7 @@ import com.ecom.CommonEntity.dto.LoginDto;
 import com.ecom.CommonEntity.dto.UserDto;
 import com.ecom.CommonEntity.model.ResponseModel;
 import com.ecom.UserService.service.UserService;
+import jakarta.ws.rs.PathParam;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -26,17 +27,17 @@ public class UserController {
     }
 
     @PatchMapping("/block/{userId}")
-    public ResponseModel blockUser(@RequestParam Long userId){
+    public ResponseModel blockUser(@PathVariable Long userId){
         return userService.blockUser(userId);
     }
 
     @GetMapping("/get/{userId}")
-    public ResponseModel getUserById(@RequestParam Long userId){
+    public ResponseModel getUserById(@PathVariable long userId){
         return userService.userFindById(userId);
     }
 
     @DeleteMapping("/delete/{userId}")
-    public ResponseModel deleteUser(@RequestParam Long userId){
+    public ResponseModel deleteUser(@PathVariable Long userId){
         return userService.deleteUser(userId);
     }
 

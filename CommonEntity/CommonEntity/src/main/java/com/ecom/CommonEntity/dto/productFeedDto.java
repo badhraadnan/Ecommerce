@@ -10,7 +10,7 @@ import java.io.Serializable;
 @AllArgsConstructor
 @Getter
 @Setter
-public class productFeedDto implements Serializable {
+public class productFeedDto implements Serializable{
     private Long productId;
     private String name;
     private Long catID;

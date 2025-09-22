@@ -2,6 +2,7 @@ package com.ecom.productservice.controller;
 
 import com.ecom.CommonEntity.dto.ProductDto;
 import com.ecom.CommonEntity.model.ResponseModel;
+import com.ecom.CommonEntity.model.pageModel;
 import com.ecom.productservice.service.ProductService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -34,7 +35,7 @@ public class ProductController {
     }
 
     @GetMapping("/{id}")
-    public ResponseModel getProductByid(@PathVariable long id){
+    public pageModel getProductByid(@PathVariable long id){
         return service.getProductByid(id);
     }
 
@@ -44,7 +45,7 @@ public class ProductController {
     }
 
     @GetMapping("/feed")
-    public ResponseModel productFeed(@RequestParam int page , @RequestParam int size) {
+    public pageModel productFeed(@RequestParam int page , @RequestParam int size) {
         return service.productFeed(page, size);
     }
 

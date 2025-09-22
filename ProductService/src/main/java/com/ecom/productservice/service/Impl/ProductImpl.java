@@ -6,6 +6,7 @@ import com.ecom.CommonEntity.dto.productFeedDto;
 import com.ecom.CommonEntity.entity.Category;
 import com.ecom.CommonEntity.entity.Product;
 import com.ecom.CommonEntity.model.ResponseModel;
+import com.ecom.CommonEntity.model.pageModel;
 import com.ecom.commonRepository.dao.CategoryDAO;
 import com.ecom.commonRepository.dao.ProductDAO;
 import com.ecom.productservice.service.ProductService;
@@ -164,32 +165,36 @@ public class ProductImpl implements ProductService {
     //Get Product ById   --Admin Side
     @Cacheable(value = "productById",key = "#id")
     @Override
-    public ResponseModel getProductByid(long id) {
+    public pageModel getProductByid(long id) {
         try {
             System.out.println("method Called getProductByid()...");
             Optional<Product> existProduct = productDAO.productFindByIdAndStatus(id, Status.ACTIVE);
 
             if (existProduct.isPresent()) {
                 Product product = existProduct.get();
-                return new ResponseModel(
+                return new pageModel(
                         HttpStatus.OK,
                         ProductDto.toDto(product),
-                        "Success"
+                        "Success",
+                        0,
+                        0
                 );
             }
 
-            return new ResponseModel(
+            return new pageModel(
                     HttpStatus.NOT_FOUND,
                     null,
-                    "Product Not Exist"
+                    "Product Not Exist",
+                    0,
+                    0
             );
 
         } catch (Exception e) {
             e.printStackTrace(); // Replace with logger in production
-            return new ResponseModel(
+            return new pageModel(
                     HttpStatus.INTERNAL_SERVER_ERROR,
                     null,
-                    "Something went wrong while fetching the product"
+                    "Something went wrong while fetching the product",0,0
             );
         }
     }
@@ -216,17 +221,17 @@ public class ProductImpl implements ProductService {
     //Product Feed   --User Side
     @Override
     @Cacheable(value = "productFeed",key = "#page + '_' + #size")
-    public ResponseModel productFeed(int page, int size) {
+    public pageModel productFeed(int page, int size) {
         try {
             System.out.println("method call -> productFeed()..");
             List<productFeedDto> feed = productDAO.getProductFeed(((page - 1) * size), size);
             if (feed.isEmpty()) {
-                return new ResponseModel(HttpStatus.NOT_FOUND, null, "Feed Not Exist");
+                return new pageModel(HttpStatus.NOT_FOUND, null, "Feed Not Exist",0,0);
             } else {
-                return new ResponseModel(HttpStatus.OK, feed, "Success");
+                return new pageModel(HttpStatus.OK, feed, "Success",page,size);
             }
         } catch (Exception e) {
-            return new ResponseModel(HttpStatus.INTERNAL_SERVER_ERROR, null, "Data Not Fetch Due to Some Error");
+            return new pageModel(HttpStatus.INTERNAL_SERVER_ERROR, null, "Data Not Fetch Due to Some Error",0,0);
         }
     }
 
