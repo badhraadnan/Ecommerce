@@ -5,7 +5,10 @@ import com.ecom.CommonEntity.model.ResponseModel;
 import com.ecom.CommonEntity.model.pageModel;
 import com.ecom.productservice.service.ProductService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.web.bind.annotation.*;
+
 
 @RestController
 @RequestMapping("/api/product/service")
@@ -45,8 +48,9 @@ public class ProductController {
     }
 
     @GetMapping("/feed")
-    public pageModel productFeed(@RequestParam int page , @RequestParam int size) {
-        return service.productFeed(page, size);
+    public pageModel productFeed(@RequestParam int pageNumber , @RequestParam int PageSize) {
+        Pageable pageable = (Pageable) PageRequest.of(pageNumber,PageSize);
+        return service.productFeed(pageable);
     }
 
     @GetMapping("/filter/{id}")

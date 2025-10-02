@@ -4,9 +4,12 @@ import com.ecom.CommonEntity.Enum.OrderStatus;
 import com.ecom.CommonEntity.Enum.Status;
 import com.ecom.CommonEntity.dto.OrderDto;
 import com.ecom.CommonEntity.entity.*;
+import com.ecom.CommonEntity.model.ErrorMsg;
 import com.ecom.CommonEntity.model.ResponseModel;
+import com.ecom.CommonEntity.model.SuccessMsg;
 import com.ecom.commonRepository.dao.MasterDao;
 import com.ecom.orderService.config.RabbitMQConfig;
+import com.ecom.orderService.exception.*;
 import com.ecom.orderService.service.OrderService;
 import com.ecom.orderService.utils.RabbitMQProducer;
 import com.ecom.orderService.utils.emailSend;
@@ -41,15 +44,14 @@ public class OrderServiceImpl implements OrderService {
     @Transactional
     public ResponseModel addOrder(Long userId, long addressId) {
         try {
-            Address address = masterDao.getAddressRepo().findByUser_UserIdAndAddressId(userId, addressId).orElse(null);
-            User user = masterDao.getUserRepository().findById(userId).orElse(null);
+            Address address = masterDao.getAddressRepo().findByUser_UserIdAndAddressId(userId, addressId)
+                    .orElseThrow(() -> new AddressNotFound(ErrorMsg.ADDRESS_NOT_FOUND));
+            User user = masterDao.getUserRepository().findById(userId)
+                    .orElseThrow(() -> new UserNotFoundException(ErrorMsg.USER_NOT_FOUND));
 
-            if (address == null || user == null) {
-                return new ResponseModel(HttpStatus.BAD_REQUEST, null, "Invalid User or Address");
-            }
 
             Cart cart = masterDao.getCartRepo().getCartByUserId(user.getUserId())
-                    .orElseThrow(() -> new IllegalArgumentException("Cart Not Exist"));
+                    .orElseThrow(() -> new CartNotFound(ErrorMsg.CART_NOT_FOUND));
 
             Orders orders = Orders.builder()
                     .address(address)
@@ -67,10 +69,10 @@ public class OrderServiceImpl implements OrderService {
             for (CartItem item : cartItems) {
                 Product product = masterDao.getProductRepo()
                         .findByproductIDAndStatus(item.getProduct().getProductID(), Status.ACTIVE)
-                        .orElseThrow(() -> new IllegalArgumentException("Product Not Exist"));
+                        .orElseThrow(() -> new ProductNotFound(ErrorMsg.PRODUCT_NOT_FOUND));
 
                 if (product.getQty() < item.getQuantity()) {
-                    return new ResponseModel(HttpStatus.NOT_FOUND, null, "Product Out Of Stock");
+                    return new ResponseModel(HttpStatus.NOT_FOUND, null, ErrorMsg.PRODUCT_OUT_OF_STOCK);
                 }
 
                 OrderItem orderItem = OrderItem.builder()
@@ -90,9 +92,9 @@ public class OrderServiceImpl implements OrderService {
             masterDao.getOrderItemsRepo().saveAll(itemList);
             masterDao.getProductRepo().saveAll(updatedProducts);
 
-            // Optionally delete or mark cart inactive
-//            masterDao.getCartItemsRepo().deleteAll(cartItems);
-//            masterDao.getCartRepo().delete(cart);
+//             Optionally delete or mark cart inactive
+            masterDao.getCartItemsRepo().deleteAll(cartItems);
+            masterDao.getCartRepo().delete(cart);
 
             List<OrderDto> dtos = itemList.stream()
                     .map(OrderDto::getOrder)
@@ -122,9 +124,9 @@ public class OrderServiceImpl implements OrderService {
                     RabbitMQConfig.ROUTING_KEY_ORDER_PROCESSOR);
 
 
-            return new ResponseModel(HttpStatus.OK, dtos, "Order Placed Successfully");
+            return new ResponseModel(HttpStatus.OK, dtos, SuccessMsg.ORDER_PLACED);
         } catch (Exception e) {
-            return new ResponseModel(HttpStatus.INTERNAL_SERVER_ERROR, null, "Something went wrong"+e.getMessage());
+            return new ResponseModel(HttpStatus.INTERNAL_SERVER_ERROR, null, ErrorMsg.SERVER_ERROR+"\n"+e.getMessage());
         }
     }
 
@@ -138,9 +140,9 @@ public class OrderServiceImpl implements OrderService {
                 .toList();
 
         if (orders.isEmpty()) {
-            return new ResponseModel(HttpStatus.NOT_FOUND, null, "No orders found for user");
+            return new ResponseModel(HttpStatus.NOT_FOUND, null, ErrorMsg.ORDER_NOT_FOUND);
         }
-        return new ResponseModel(HttpStatus.OK, orders, "Orders fetched successfully");
+        return new ResponseModel(HttpStatus.OK, orders, SuccessMsg.ORDER_FETCHED_SUCCESSFULLY);
     }
 
     //Order Status Update --Admin Side
@@ -166,7 +168,7 @@ public class OrderServiceImpl implements OrderService {
     @Override
     public ResponseModel cancelOrder(Long orderId) {
         try {
-            OrderItem orders = masterDao.getOrderItemsRepo().findById(orderId).orElseThrow(() -> new RuntimeException("Order Not Found"));
+            OrderItem orders = masterDao.getOrderItemsRepo().findById(orderId).orElseThrow(() -> new OrderNotFound(ErrorMsg.ORDER_NOT_FOUND));
 
             if (orders.getOrderStatus() == OrderStatus.PLACED || orders.getOrderStatus() == OrderStatus.PROCESSING) {
                 orders.setOrderStatus(OrderStatus.CANCELLED);
@@ -191,11 +193,11 @@ public class OrderServiceImpl implements OrderService {
                 );
                 producer.sendMessage(objectMapper.writeValueAsString(map), RabbitMQConfig.ECOMMERCE_EXCHANGE, RabbitMQConfig.ROUTING_KEY_CANCEL_ORDER);
 
-                return new ResponseModel(HttpStatus.OK, OrderDto.getOrder(saveOrder), "Order Cancelled");
+                return new ResponseModel(HttpStatus.OK, OrderDto.getOrder(saveOrder), SuccessMsg.ORDER_CANCEL);
             }
-            return new ResponseModel(HttpStatus.NOT_ACCEPTABLE, null, "Cancel Request Not Acceptable");
+            return new ResponseModel(HttpStatus.NOT_ACCEPTABLE, null, SuccessMsg.ORDER_CANCEL_NOT_ACCEPTABLE);
         } catch (Exception e) {
-            return new ResponseModel(HttpStatus.INTERNAL_SERVER_ERROR, null, "Order Not Found ");
+            return new ResponseModel(HttpStatus.INTERNAL_SERVER_ERROR, null, ErrorMsg.SERVER_ERROR+"\n"+e.getMessage());
         }
     }
 
@@ -207,9 +209,9 @@ public class OrderServiceImpl implements OrderService {
                     .stream()
                     .map(OrderDto::getOrder)
                     .toList();
-            return new ResponseModel(HttpStatus.OK, dtos, "Success");
+            return new ResponseModel(HttpStatus.OK, dtos, SuccessMsg.ORDER_FETCHED_SUCCESSFULLY);
         } catch (Exception e) {
-            return new ResponseModel(HttpStatus.INTERNAL_SERVER_ERROR, null, "Something went Wrong");
+            return new ResponseModel(HttpStatus.INTERNAL_SERVER_ERROR, null,ErrorMsg.SERVER_ERROR+"\n"+e.getMessage());
         }
     }
 
@@ -218,7 +220,7 @@ public class OrderServiceImpl implements OrderService {
     public ResponseModel returnOrder(Long orderId) {
         try {
             OrderItem orders = masterDao.getOrderItemsRepo().findById(orderId)
-                    .orElseThrow(() -> new RuntimeException("Order Not Found"));
+                    .orElseThrow(() -> new OrderNotFound(ErrorMsg.ORDER_NOT_FOUND));
 
 
             if (orders.getOrders().getOrderStatus() == OrderStatus.DELIVERED && orders.getUpdatedAt().plusDays(7).isAfter(LocalDateTime.now())) {
@@ -228,15 +230,15 @@ public class OrderServiceImpl implements OrderService {
                     orders.setUpdatedAt(LocalDateTime.now());
                     OrderItem saveOrder = masterDao.getOrderItemsRepo().save(orders);
 
-                    return new ResponseModel(HttpStatus.OK, OrderDto.getOrder(saveOrder), "Order Return Request Sent");
+                    return new ResponseModel(HttpStatus.OK, OrderDto.getOrder(saveOrder), SuccessMsg.ORDER_RETURNED);
 
                 }
             }
-                return new ResponseModel(HttpStatus.BAD_REQUEST, null, "Return Request Not Accessible (after 7 days or not delivered)");
+                return new ResponseModel(HttpStatus.BAD_REQUEST, null, SuccessMsg.ORDER_RETURN_NOT_ACCEPTABLE);
 
 
         } catch (Exception e) {
-            return new ResponseModel(HttpStatus.INTERNAL_SERVER_ERROR, null, "Order Not Found");
+            return new ResponseModel(HttpStatus.INTERNAL_SERVER_ERROR, null, ErrorMsg.SERVER_ERROR+"\n"+e.getMessage());
         }
     }
 

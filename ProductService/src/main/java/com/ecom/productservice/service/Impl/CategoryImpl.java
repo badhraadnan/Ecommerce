@@ -3,8 +3,11 @@ package com.ecom.productservice.service.Impl;
 import com.ecom.CommonEntity.Enum.Status;
 import com.ecom.CommonEntity.dto.CategoryDto;
 import com.ecom.CommonEntity.entity.Category;
+import com.ecom.CommonEntity.model.ErrorMsg;
 import com.ecom.CommonEntity.model.ResponseModel;
+import com.ecom.CommonEntity.model.SuccessMsg;
 import com.ecom.commonRepository.dao.CategoryDAO;
+import com.ecom.productservice.exception.CategoryNotFound;
 import com.ecom.productservice.service.CategoryService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -30,13 +33,13 @@ public class CategoryImpl implements CategoryService {
                 Category toEntity = CategoryDto.toEntity(categoryDto);
                 Category saveCategory = categoryDAO.saveCategory(toEntity);
 
-                return new ResponseModel(HttpStatus.OK, CategoryDto.toDto(saveCategory), "Success");
+                return new ResponseModel(HttpStatus.OK, CategoryDto.toDto(saveCategory), SuccessMsg.CATEGORY_ADDED);
 
             } else {
-                return new ResponseModel(HttpStatus.NOT_FOUND, null, "Category Already Exist");
+                return new ResponseModel(HttpStatus.NOT_FOUND, null, ErrorMsg.CATEGORY_ALREADY_EXISTS);
             }
         } catch (Exception e) {
-            return new ResponseModel(HttpStatus.INTERNAL_SERVER_ERROR, null, "Something went wrong: " + e.getMessage());
+            return new ResponseModel(HttpStatus.INTERNAL_SERVER_ERROR, null, ErrorMsg.SERVER_ERROR + "\n" + e.getMessage());
         }
     }
 
@@ -49,10 +52,10 @@ public class CategoryImpl implements CategoryService {
                     .map(CategoryDto::toDto)
                     .toList();
 
-            return new ResponseModel(HttpStatus.OK, dto, "Success");
+            return new ResponseModel(HttpStatus.OK, dto, SuccessMsg.CATEGORY_FETCHED_SUCCESSFULLY);
 
         } catch (Exception e) {
-            return new ResponseModel(HttpStatus.INTERNAL_SERVER_ERROR, null, "Something went wrong: " + e.getMessage());
+            return new ResponseModel(HttpStatus.INTERNAL_SERVER_ERROR, null, ErrorMsg.SERVER_ERROR + "\n" + e.getMessage());
         }
     }
 
@@ -63,23 +66,23 @@ public class CategoryImpl implements CategoryService {
             Optional<Category> existCategory = categoryDAO.categoryFindByIdAndStatus(categoryDto.getCatID(), Status.ACTIVE);
 
             if (existCategory.isPresent()) {
-                Category axist = categoryDAO.categoryFindByName(categoryDto.getName());
+                Category exist = categoryDAO.categoryFindByName(categoryDto.getName());
 
-                if (axist == null) {
+                if (exist == null) {
                     Category category = existCategory.get();
                     category.setName(categoryDto.getName());
                     category.setUpdatedAt(LocalDateTime.now());
                     Category saveCategory = categoryDAO.saveCategory(category);
-                    return new ResponseModel(HttpStatus.OK, CategoryDto.toDto(saveCategory), "Success");
+                    return new ResponseModel(HttpStatus.OK, CategoryDto.toDto(saveCategory), SuccessMsg.CATEGORY_UPDATED);
 
                 } else {
-                    return new ResponseModel(HttpStatus.NOT_FOUND, null, "Category Name already exist");
+                    return new ResponseModel(HttpStatus.NOT_FOUND, null, ErrorMsg.CATEGORY_ALREADY_EXISTS);
                 }
             } else {
-                return new ResponseModel(HttpStatus.NOT_FOUND, null, "Category Not Found");
+                return new ResponseModel(HttpStatus.NOT_FOUND, null, ErrorMsg.CATEGORY_NOT_FOUND);
             }
         } catch (Exception e) {
-            return new ResponseModel(HttpStatus.INTERNAL_SERVER_ERROR, null, "Something went wrong: " + e.getMessage());
+            return new ResponseModel(HttpStatus.INTERNAL_SERVER_ERROR, null, ErrorMsg.SERVER_ERROR + "\n" + e.getMessage());
         }
     }
 
@@ -89,12 +92,12 @@ public class CategoryImpl implements CategoryService {
         try {
             Optional<Category> category = categoryDAO.categoryFindByIdAndStatus(id, Status.ACTIVE);
             if (category.isPresent()) {
-                return new ResponseModel(HttpStatus.OK, CategoryDto.toDto(category.get()), "Success");
+                return new ResponseModel(HttpStatus.OK, CategoryDto.toDto(category.get()), SuccessMsg.CATEGORY_FETCHED_SUCCESSFULLY);
             } else {
-                return new ResponseModel(HttpStatus.NOT_FOUND, null, "Category Not Found");
+                return new ResponseModel(HttpStatus.NOT_FOUND, null, ErrorMsg.CATEGORY_NOT_FOUND);
             }
         } catch (Exception e) {
-            return new ResponseModel(HttpStatus.INTERNAL_SERVER_ERROR, null, "Something went wrong: " + e.getMessage());
+            return new ResponseModel(HttpStatus.INTERNAL_SERVER_ERROR, null, ErrorMsg.SERVER_ERROR + "\n" + e.getMessage());
         }
     }
 
@@ -102,24 +105,19 @@ public class CategoryImpl implements CategoryService {
     @Override
     public ResponseModel blockCategory(long id) {
         try {
-            Optional<Category> existCategory = categoryDAO.categoryFindById(id);
-            if (existCategory.isPresent()) {
-                Category category = existCategory.get();
+            Category category = categoryDAO.categoryFindById(id).orElseThrow(() -> new CategoryNotFound(ErrorMsg.CATEGORY_NOT_FOUND));
 
-                if (category.getStatus() == Status.ACTIVE) {
-                    category.setStatus(Status.INACTIVE);
-                }else {
-                    category.setStatus(Status.ACTIVE);
-                }
-
-                Category save = categoryDAO.saveCategory(category);
-
-                return new ResponseModel(HttpStatus.OK, CategoryDto.toDto(save), "Success");
+            if (category != null && category.getStatus() == Status.ACTIVE) {
+                category.setStatus(Status.INACTIVE);
+                categoryDAO.saveCategory(category);
+                return new ResponseModel(HttpStatus.OK, null, SuccessMsg.CATEGORY_BLOCK_SUCCESS);
             } else {
-                return new ResponseModel(HttpStatus.NOT_FOUND, null, "Category Not Found");
+                category.setStatus(Status.ACTIVE);
+                categoryDAO.saveCategory(category);
+                return new ResponseModel(HttpStatus.OK, null, SuccessMsg.CATEGORY_UNBLOCKED);
             }
         } catch (Exception e) {
-            return new ResponseModel(HttpStatus.INTERNAL_SERVER_ERROR, null, "Something went wrong: " + e.getMessage());
+            return new ResponseModel(HttpStatus.INTERNAL_SERVER_ERROR, null, ErrorMsg.SERVER_ERROR+"\n" + e.getMessage());
         }
     }
 
@@ -128,14 +126,16 @@ public class CategoryImpl implements CategoryService {
     public ResponseModel deleteCategory(long id) {
 
         try {
-            Optional<Category> existCategory = categoryDAO.categoryFindById(id);
-            if (existCategory.isPresent()) {
+            Category existCategory = categoryDAO.categoryFindById(id).orElseThrow(() -> new CategoryNotFound(ErrorMsg.CATEGORY_NOT_FOUND));
+            if (existCategory != null) {
                 categoryDAO.categoryDelete(id);
-                return new ResponseModel(HttpStatus.OK, null, "Category Deleted");
-            }else { return new ResponseModel(HttpStatus.NOT_FOUND,null,"Category Not Found");}
+                return new ResponseModel(HttpStatus.OK, null, SuccessMsg.CATEGORY_DELETED);
+            } else {
+                return new ResponseModel(HttpStatus.NOT_FOUND, null, ErrorMsg.CATEGORY_NOT_FOUND);
+            }
         } catch (Exception e) {
             e.printStackTrace();
-            return new ResponseModel(HttpStatus.INTERNAL_SERVER_ERROR,null,"Category Not Deleted Due to some Error");
+            return new ResponseModel(HttpStatus.INTERNAL_SERVER_ERROR, null, ErrorMsg.SERVER_ERROR + "\n" + e.getMessage());
         }
     }
 

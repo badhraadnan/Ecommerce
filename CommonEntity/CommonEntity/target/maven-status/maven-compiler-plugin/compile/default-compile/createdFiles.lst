@@ -11,8 +11,10 @@ com\ecom\CommonEntity\dto\UserProfileDto.class
 com\ecom\CommonEntity\entity\Category.class
 com\ecom\CommonEntity\dto\CartDto.class
 com\ecom\CommonEntity\Enum\Status.class
+com\ecom\CommonEntity\model\ErrorMsg.class
 com\ecom\CommonEntity\entity\User$UserBuilder.class
 com\ecom\CommonEntity\entity\CartItem.class
+com\ecom\CommonEntity\model\SuccessMsg.class
 com\ecom\CommonEntity\entity\User.class
 com\ecom\CommonEntity\entity\Orders$OrdersBuilder.class
 com\ecom\CommonEntity\model\pageModel.class

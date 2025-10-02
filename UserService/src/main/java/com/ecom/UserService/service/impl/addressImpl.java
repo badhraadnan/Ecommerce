@@ -4,7 +4,13 @@ import com.ecom.CommonEntity.Enum.Status;
 import com.ecom.CommonEntity.dto.AddressDto;
 import com.ecom.CommonEntity.dto.UserProfileDto;
 import com.ecom.CommonEntity.entity.*;
+import com.ecom.CommonEntity.model.ErrorMsg;
 import com.ecom.CommonEntity.model.ResponseModel;
+import com.ecom.CommonEntity.model.SuccessMsg;
+import com.ecom.UserService.exception.CityNotFound;
+import com.ecom.UserService.exception.CountryNotFound;
+import com.ecom.UserService.exception.StateNotFound;
+import com.ecom.UserService.exception.UserNotFoundException;
 import com.ecom.UserService.service.AddressService;
 import com.ecom.commonRepository.dao.AddressDAO;
 import com.ecom.commonRepository.dao.MasterDao;
@@ -31,24 +37,15 @@ public class addressImpl implements AddressService {
     //Insert Address  --User Side
     @Override
     public ResponseModel saveAddress(AddressDto addressDto) {
-        Optional<Country> existCountry = masterDAO.getCountryRepo().findById(addressDto.getCountryId());
-        Optional<State> existState = masterDAO.getStateRepo().findById(addressDto.getStateId());
-        Optional<City> existCity = masterDAO.getCityRepo().findById(addressDto.getCityId());
-        Optional<User> existUser = masterDAO.getUserRepository().findById(addressDto.getUserId());
+        Country country = masterDAO.getCountryRepo().findById(addressDto.getCountryId())
+                .orElseThrow(() -> new CityNotFound(ErrorMsg.COUNTRY_NOT_FOUND));
+        State state = masterDAO.getStateRepo().findById(addressDto.getStateId())
+                .orElseThrow(() -> new StateNotFound(ErrorMsg.STATE_NOT_FOUND));
+        City city = masterDAO.getCityRepo().findById(addressDto.getCityId())
+                .orElseThrow(() -> new CityNotFound(ErrorMsg.CITY_NOT_FOUND));
+        User user = masterDAO.getUserRepository().findById(addressDto.getUserId())
+                .orElseThrow(() -> new UserNotFoundException(ErrorMsg.USER_NOT_FOUND));
 
-        if (existCountry.isEmpty()) {
-            return new ResponseModel(HttpStatus.NOT_FOUND, null, "Country not found");
-        } else if (existState.isEmpty()) {
-            return new ResponseModel(HttpStatus.NOT_FOUND, null, "State not found");
-        } else if (existCity.isEmpty()) {
-            return new ResponseModel(HttpStatus.NOT_FOUND, null, "City not found");
-        } else if (existUser.isEmpty()) {
-            return new ResponseModel(HttpStatus.NOT_FOUND, null, "User not found");
-        }
-
-        State state = existState.get();
-        City city = existCity.get();
-        Country country = existCountry.get();
 
         // Validate: State belongs to Country
         if (state.getCountry().getCountryId() != country.getCountryId()) {
@@ -61,10 +58,10 @@ public class addressImpl implements AddressService {
         }
 
         // All checks passed, proceed to save
-        Address toEntity = AddressDto.toEntity(addressDto, country, state, city, existUser.get());
+        Address toEntity = AddressDto.toEntity(addressDto, country, state, city, user);
         Address savedAddress = addressDAO.saveAddress(toEntity);
 
-        return new ResponseModel(HttpStatus.OK, AddressDto.toDto(savedAddress), "Address saved successfully");
+        return new ResponseModel(HttpStatus.OK, AddressDto.toDto(savedAddress), SuccessMsg.ADDRESS_ADDED);
     }
 
 
@@ -73,12 +70,12 @@ public class addressImpl implements AddressService {
     public ResponseModel getAllAddress() {
         List<Address> existAddress = addressDAO.findAllByStatus(Status.ACTIVE);
         if (existAddress.isEmpty()) {
-            return  new ResponseModel(HttpStatus.NOT_FOUND,null,"Not Found");
+            return  new ResponseModel(HttpStatus.NOT_FOUND,null,ErrorMsg.ADDRESS_NOT_FOUND);
         }else {
             List<AddressDto> dto =existAddress.stream()
                     .map(AddressDto::toDto)
                     .toList();
-            return new ResponseModel(HttpStatus.OK,dto,"Success");
+            return new ResponseModel(HttpStatus.OK,dto,SuccessMsg.USER_FETCHED_SUCCESSFULLY);
         }
     }
 
@@ -90,9 +87,9 @@ public class addressImpl implements AddressService {
             List<AddressDto> dto= existAdd.stream()
                     .map(AddressDto::toDto)
                     .toList();
-            return new ResponseModel(HttpStatus.OK,dto,"Success");
+            return new ResponseModel(HttpStatus.OK,dto,SuccessMsg.ADDRESS_FETCHED_SUCCESSFULLY);
         }
-        return new ResponseModel(HttpStatus.NOT_FOUND,null,"Address Not Found");
+        return new ResponseModel(HttpStatus.NOT_FOUND,null,ErrorMsg.ADDRESS_NOT_FOUND);
     }
 
     //UPDATE ADDRESS
@@ -123,40 +120,35 @@ public class addressImpl implements AddressService {
     @Override
     public ResponseModel updateAddress(AddressDto addressDto) {
         try {
-            Optional<Address> existAddress = addressDAO.findByUserIdAndStatus(addressDto.getAddressId(), Status.ACTIVE);
-
-            if (existAddress.isEmpty()) {
-                return new ResponseModel(HttpStatus.NOT_FOUND, null, "Address Not Found");
-            }
-
-            Address address = existAddress.get();
+            Address address = addressDAO.findByUserIdAndStatus(addressDto.getAddressId(), Status.ACTIVE)
+                    .orElseThrow(() -> new RuntimeException("Address Not Exist"));
 
             // Load references only if IDs are provided
             Country country = null;
             if (addressDto.getCountryId() != null) {
-                country = masterDAO.getCountryRepo().findById(addressDto.getCountryId()).orElse(null);
+                country = masterDAO.getCountryRepo().findById(addressDto.getCountryId()).orElseThrow(() -> new CountryNotFound("Country Not Found"));
             }
 
             State state = null;
             if (addressDto.getStateId() != null) {
-                state = masterDAO.getStateRepo().findById(addressDto.getStateId()).orElse(null);
+                state = masterDAO.getStateRepo().findById(addressDto.getStateId()).orElseThrow(() -> new StateNotFound("State Not Found"));
             }
 
             City city = null;
             if (addressDto.getCityId() != null) {
-                city = masterDAO.getCityRepo().findById(addressDto.getCityId()).orElse(null);
+                city = masterDAO.getCityRepo().findById(addressDto.getCityId()).orElseThrow(() -> new CityNotFound("City Not Found"));
             }
 
             User user = null;
             if (addressDto.getUserId() != null) {
-                user = masterDAO.getUserRepository().findById(addressDto.getUserId()).orElse(null);
+                user = masterDAO.getUserRepository().findById(addressDto.getUserId()).orElseThrow(() -> new UserNotFoundException("User Not Found"));
             }
 
             // Update the address only with non-null values
             AddressDto.toUpdate(addressDto, address, country, state, city, user);
 
             Address savedAddress = addressDAO.saveAddress(address);
-            return new ResponseModel(HttpStatus.OK, AddressDto.toDto(savedAddress), "Address Updated");
+            return new ResponseModel(HttpStatus.OK, AddressDto.toDto(savedAddress), SuccessMsg.ADDRESS_UPDATED);
 
         } catch (Exception e) {
             return new ResponseModel(HttpStatus.INTERNAL_SERVER_ERROR, null, "Address Not Updated Due to an ERROR");
@@ -172,9 +164,9 @@ public class addressImpl implements AddressService {
     public ResponseModel UserDetailsWithAddress() {
         List<Object[]> user = addressDAO.findUsersAllDetailsByAddress();
         if (user.isEmpty()){
-            return new ResponseModel(HttpStatus.NOT_FOUND,null,"User Details Not Found");
+            return new ResponseModel(HttpStatus.NOT_FOUND,null,ErrorMsg.USER_NOT_FOUND);
         }else {
-            return new ResponseModel(HttpStatus.OK, user, "Success");
+            return new ResponseModel(HttpStatus.OK, user, SuccessMsg.USER_FETCHED_SUCCESSFULLY);
         }
     }
 
@@ -184,7 +176,7 @@ public class addressImpl implements AddressService {
     public ResponseModel ListOfAllCountry() {
         List<Country> countries = masterDAO.getCountryRepo().findAll();
         if(countries.isEmpty()){
-            return new ResponseModel(HttpStatus.NOT_FOUND,null,"Country Not Found");
+            return new ResponseModel(HttpStatus.NOT_FOUND,null,ErrorMsg.COUNTRY_NOT_FOUND);
         }else {
             return new ResponseModel(HttpStatus.OK, countries, "Success");
         }
@@ -196,7 +188,7 @@ public class addressImpl implements AddressService {
         System.out.println("method called..");
         List<Country> countries=masterDAO.getCountryRepo().findAllByCountryId(id);
         if(countries.isEmpty()){
-            return new ResponseModel(HttpStatus.NOT_FOUND,null,"Country Not Found");
+            return new ResponseModel(HttpStatus.NOT_FOUND,null,ErrorMsg.COUNTRY_NOT_FOUND);
         }else {
             return new ResponseModel(HttpStatus.OK, countries, "Success");
         }
@@ -217,7 +209,7 @@ public class addressImpl implements AddressService {
             List<State> states = masterDAO.getStateRepo().listOfStateCountryWise(id);
             return new ResponseModel(HttpStatus.OK, states, "Success");
         }else {
-            return new ResponseModel(HttpStatus.NOT_FOUND,null,"Country Not Exist");
+            return new ResponseModel(HttpStatus.NOT_FOUND,null,ErrorMsg.COUNTRY_NOT_FOUND);
         }
     }
 
@@ -236,7 +228,7 @@ public class addressImpl implements AddressService {
             List<City> cities = masterDAO.getCityRepo().listOfCityStateWise(id);
             return new ResponseModel(HttpStatus.OK, cities, "Success");
         }else {
-            return new ResponseModel(HttpStatus.NOT_FOUND,null,"State Not Found");
+            return new ResponseModel(HttpStatus.NOT_FOUND,null,ErrorMsg.STATE_NOT_FOUND);
         }
     }
 
@@ -245,9 +237,9 @@ public class addressImpl implements AddressService {
     public ResponseModel UserDetails() {
         List<UserProfileDto> user = addressDAO.findUser();
         if (user.isEmpty()){
-            return  new ResponseModel(HttpStatus.NOT_FOUND,null,"Not Found");
+            return  new ResponseModel(HttpStatus.NOT_FOUND,null, ErrorMsg.USER_NOT_FOUND);
         }else {
-            return new ResponseModel(HttpStatus.OK, user, "Success");
+            return new ResponseModel(HttpStatus.OK, user, SuccessMsg.USER_FETCHED_SUCCESSFULLY);
         }
     }
 

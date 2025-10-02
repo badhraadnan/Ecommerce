@@ -5,17 +5,24 @@ import com.ecom.CommonEntity.dto.ProductDto;
 import com.ecom.CommonEntity.dto.productFeedDto;
 import com.ecom.CommonEntity.entity.Category;
 import com.ecom.CommonEntity.entity.Product;
+import com.ecom.CommonEntity.model.ErrorMsg;
 import com.ecom.CommonEntity.model.ResponseModel;
+import com.ecom.CommonEntity.model.SuccessMsg;
 import com.ecom.CommonEntity.model.pageModel;
 import com.ecom.commonRepository.dao.CategoryDAO;
 import com.ecom.commonRepository.dao.ProductDAO;
+import com.ecom.productservice.exception.CategoryNotFound;
+import com.ecom.productservice.exception.ProductNotFound;
 import com.ecom.productservice.service.ProductService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+
 
 import java.util.List;
 import java.util.Optional;
@@ -31,27 +38,26 @@ public class ProductImpl implements ProductService {
 
     //Insert Product  --Admin Side
     @Override
-    @CacheEvict(value = {"filterProduct","productById","productFeed","filterByCategory"}, allEntries = true)
+    @CacheEvict(value = {"filterProduct", "productById", "productFeed", "filterByCategory"}, allEntries = true)
     public ResponseModel addProduct(ProductDto productDto) {
         try {
-            Optional<Category> category = categoryDAO.categoryFindByIdAndStatus(
-                    productDto.getCategory().getCatID(), Status.ACTIVE);
 
-            if (category.isPresent()) {
-                Product product = ProductDto.toEntity(productDto, category.get());
+            Category category = categoryDAO.categoryFindByIdAndStatus(
+                    productDto.getCategory().getCatID(), Status.ACTIVE)
+                    .orElseThrow(() -> new CategoryNotFound(ErrorMsg.CATEGORY_NOT_FOUND));
+
+
+                Product product = ProductDto.toEntity(productDto, category);
                 Product saveProduct = productDAO.saveProduct(product);
 
                 return new ResponseModel(
                         HttpStatus.OK,
                         ProductDto.toDto(saveProduct),
-                        "Product Added Successfully"
-                );
-            } else {
-                return new ResponseModel(HttpStatus.NOT_FOUND, null, "Category Not Found");
-            }
+                        SuccessMsg.PRODUCT_ADDED);
+
         } catch (Exception e) {
             e.printStackTrace();
-            return new ResponseModel(HttpStatus.INTERNAL_SERVER_ERROR, null, "Something went wrong while adding the product");
+            return new ResponseModel(HttpStatus.INTERNAL_SERVER_ERROR, null, ErrorMsg.SERVER_ERROR+"\n " + e.getMessage());
         }
     }
 
@@ -67,14 +73,14 @@ public class ProductImpl implements ProductService {
                     .map(ProductDto::toDto)
                     .toList();
 
-            return new ResponseModel(HttpStatus.OK, dto, "Success");
+            return new ResponseModel(HttpStatus.OK, dto, SuccessMsg.PRODUCT_FETCHED_SUCCESSFULLY);
 
         } catch (Exception e) {
             e.printStackTrace();
             return new ResponseModel(
                     HttpStatus.INTERNAL_SERVER_ERROR,
                     null,
-                    "Something went wrong while fetching products"
+                    ErrorMsg.SERVER_ERROR +"\n" + e.getMessage()
             );
         }
     }
@@ -82,13 +88,11 @@ public class ProductImpl implements ProductService {
 
     //Block Product  --Admin Side
     @Override
-    @CacheEvict(value = {"filterProduct","productById","productFeed","filterByCategory"}, allEntries = true)
+    @CacheEvict(value = {"filterProduct", "productById", "productFeed", "filterByCategory"}, allEntries = true)
     public ResponseModel blockProduct(long id) {
         try {
-            Optional<Product> existProduct = productDAO.productFindById(id);
+            Product product = productDAO.productFindById(id).orElseThrow(() -> new ProductNotFound(ErrorMsg.PRODUCT_NOT_FOUND));
 
-            if (existProduct.isPresent()) {
-                Product product = existProduct.get();
 
                 if (product.getStatus() == Status.ACTIVE) {
                     product.setStatus(Status.INACTIVE);
@@ -100,41 +104,31 @@ public class ProductImpl implements ProductService {
                 return new ResponseModel(
                         HttpStatus.OK,
                         null,
-                        "Product blocked successfully"
+                        SuccessMsg.PRODUCT_BLOCK_SUCCESS
                 );
-            }
-
-            return new ResponseModel(
-                    HttpStatus.NOT_FOUND,
-                    null,
-                    "Product not found"
-            );
 
         } catch (Exception e) {
-            e.printStackTrace(); // replace with proper logger in production
+            e.printStackTrace();
             return new ResponseModel(
                     HttpStatus.INTERNAL_SERVER_ERROR,
                     null,
-                    "Something went wrong while blocking the product"
+                    ErrorMsg.SERVER_ERROR +"\n " + e.getMessage()
             );
         }
     }
-
 
     //Update Product   --Admin Side
     @Override
     @CachePut(value = "productFeed")
     public ResponseModel updateProduct(ProductDto productDto) {
         try {
-            System.out.println("Product Updated...");
-            Optional<Product> existProduct = productDAO.productFindByIdAndStatus(
-                    productDto.getProductId(), Status.ACTIVE);
+            Product product = productDAO.productFindByIdAndStatus(
+                    productDto.getProductId(), Status.ACTIVE).orElseThrow(() -> new ProductNotFound(ErrorMsg.PRODUCT_NOT_FOUND));
 
-            Optional<Category> existCategory = categoryDAO.categoryFindByIdAndStatus(
-                    productDto.getCategory().getCatID(), Status.ACTIVE);
+            Category category = categoryDAO.categoryFindByIdAndStatus(
+                    productDto.getCategory().getCatID(), Status.ACTIVE).orElseThrow(() -> new CategoryNotFound(ErrorMsg.CATEGORY_NOT_FOUND));
 
-            if (existProduct.isPresent() && existCategory.isPresent()) {
-                Product product = existProduct.get();
+
                 ProductDto.updateProduct(productDto, product);
 
                 Product updatedProduct = productDAO.saveProduct(product);
@@ -142,21 +136,15 @@ public class ProductImpl implements ProductService {
                 return new ResponseModel(
                         HttpStatus.OK,
                         ProductDto.toDto(updatedProduct),
-                        "Updated Successfully"
+                        SuccessMsg.PRODUCT_UPDATED
                 );
-            } else {
-                return new ResponseModel(
-                        HttpStatus.NOT_FOUND,
-                        null,
-                        "Product or Category Not Exist"
-                );
-            }
+
         } catch (Exception e) {
-            e.printStackTrace(); // Optional: Use logger.error(...) instead in production
+            e.printStackTrace();
             return new ResponseModel(
                     HttpStatus.INTERNAL_SERVER_ERROR,
                     null,
-                    "Something went wrong while updating the product"
+                    ErrorMsg.SERVER_ERROR+"\n " + e.getMessage()
             );
         }
     }
@@ -168,33 +156,20 @@ public class ProductImpl implements ProductService {
     public pageModel getProductByid(long id) {
         try {
             System.out.println("method Called getProductByid()...");
-            Optional<Product> existProduct = productDAO.productFindByIdAndStatus(id, Status.ACTIVE);
+            Product product = productDAO.productFindByIdAndStatus(id, Status.ACTIVE).orElseThrow(() -> new ProductNotFound(ErrorMsg.PRODUCT_NOT_FOUND));
 
-            if (existProduct.isPresent()) {
-                Product product = existProduct.get();
                 return new pageModel(
                         HttpStatus.OK,
                         ProductDto.toDto(product),
-                        "Success",
-                        0,
-                        0
+                        SuccessMsg.PRODUCT_FETCHED_SUCCESSFULLY
                 );
-            }
-
-            return new pageModel(
-                    HttpStatus.NOT_FOUND,
-                    null,
-                    "Product Not Exist",
-                    0,
-                    0
-            );
 
         } catch (Exception e) {
-            e.printStackTrace(); // Replace with logger in production
+            e.printStackTrace();
             return new pageModel(
                     HttpStatus.INTERNAL_SERVER_ERROR,
                     null,
-                    "Something went wrong while fetching the product",0,0
+                    ErrorMsg.SERVER_ERROR+"\n "+ e.getMessage()
             );
         }
     }
@@ -207,31 +182,38 @@ public class ProductImpl implements ProductService {
             Optional<Product> existProduct = productDAO.productFindById(id);
             if (existProduct.isPresent()) {
                 productDAO.productDelete(id);
-                return new ResponseModel(HttpStatus.OK, null, "Product Deleted");
+                return new ResponseModel(HttpStatus.OK, null, SuccessMsg.PRODUCT_DELETED);
             } else {
-                return new ResponseModel(HttpStatus.NOT_FOUND, null, "Product Not Exist");
+                return new ResponseModel(HttpStatus.NOT_FOUND, null, ErrorMsg.PRODUCT_NOT_FOUND);
             }
         } catch (Exception e) {
             e.printStackTrace();
-            return new ResponseModel(HttpStatus.INTERNAL_SERVER_ERROR, null, "Product Not Deleted Due to some Error");
+            return new ResponseModel(HttpStatus.INTERNAL_SERVER_ERROR, null, ErrorMsg.SERVER_ERROR + "\n " + e.getMessage());
         }
 
     }
 
     //Product Feed   --User Side
     @Override
-    @Cacheable(value = "productFeed",key = "#page + '_' + #size")
-    public pageModel productFeed(int page, int size) {
+    @Cacheable(value = "productFeed",key = "#pageable.pageNumber + '_' + #pageable.pageSize")
+    public pageModel productFeed(Pageable pageable) {
         try {
             System.out.println("method call -> productFeed()..");
-            List<productFeedDto> feed = productDAO.getProductFeed(((page - 1) * size), size);
+            Page<productFeedDto> feed = productDAO.getProductFeed(pageable);
             if (feed.isEmpty()) {
-                return new pageModel(HttpStatus.NOT_FOUND, null, "Feed Not Exist",0,0);
-            } else {
-                return new pageModel(HttpStatus.OK, feed, "Success",page,size);
+                throw new ProductNotFound(ErrorMsg.PRODUCT_NOT_FOUND);
             }
+
+            return new pageModel(HttpStatus.OK,
+                    feed.getContent(),
+                    SuccessMsg.PRODUCT_FETCHED_SUCCESSFULLY,
+                    feed.getNumber(),
+                    feed.getSize(),
+                    feed.getTotalElements(),
+                    feed.getTotalPages());
+
         } catch (Exception e) {
-            return new pageModel(HttpStatus.INTERNAL_SERVER_ERROR, null, "Data Not Fetch Due to Some Error",0,0);
+            return new pageModel(HttpStatus.INTERNAL_SERVER_ERROR, null, ErrorMsg.SERVER_ERROR+"\n " + e.getMessage());
         }
     }
 
@@ -241,7 +223,7 @@ public class ProductImpl implements ProductService {
     public ResponseModel ProductFilterByCategory(int id) {
         System.out.println("method call -> ProductFilterByCategory()...");
         List<Object[]> products = productDAO.getProductByCategory(id);
-        return new ResponseModel(HttpStatus.OK, products, "success");
+        return new ResponseModel(HttpStatus.OK, products, SuccessMsg.PRODUCT_FETCHED_SUCCESSFULLY);
     }
 
 
@@ -253,9 +235,9 @@ public class ProductImpl implements ProductService {
         List<Object[]> products = productDAO.getFilterByProduct(input);
 
         if (products.isEmpty()) {
-            return new ResponseModel(HttpStatus.NOT_FOUND, null, "Product Not Found");
+            throw new ProductNotFound(ErrorMsg.PRODUCT_NOT_FOUND);
         } else {
-            return new ResponseModel(HttpStatus.OK, products, "Success");
+            return new ResponseModel(HttpStatus.OK, products, SuccessMsg.PRODUCT_FETCHED_SUCCESSFULLY);
         }
 
     }

@@ -8,11 +8,17 @@ import com.ecom.CommonEntity.entity.Cart;
 import com.ecom.CommonEntity.entity.CartItem;
 import com.ecom.CommonEntity.entity.Product;
 import com.ecom.CommonEntity.entity.User;
+import com.ecom.CommonEntity.model.ErrorMsg;
 import com.ecom.CommonEntity.model.ResponseModel;
+import com.ecom.CommonEntity.model.SuccessMsg;
 import com.ecom.commonRepository.dao.CartDao;
 import com.ecom.commonRepository.dao.CartItemsDao;
 import com.ecom.commonRepository.dao.MasterDao;
 import com.ecom.commonRepository.dao.UserDao;
+import com.ecom.productservice.exception.CartNotFound;
+import com.ecom.productservice.exception.CategoryNotFound;
+import com.ecom.productservice.exception.ProductNotFound;
+import com.ecom.productservice.exception.UserNotFound;
 import com.ecom.productservice.service.CartItemService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -43,7 +49,7 @@ public class CartItemServiceImpl implements CartItemService {
         try {
             User user = masterDao.getUserRepository()
                     .findByUserIdAndStatus(cartDto.getUserId(), Status.ACTIVE)
-                    .orElseThrow(() -> new RuntimeException("User not found"));
+                    .orElseThrow(() -> new UserNotFound(ErrorMsg.USER_NOT_FOUND));
 
             Cart cart = cartDao.findByUserIdAndStatus(user.getUserId(), Status.ACTIVE)
                     .orElseGet(() -> {
@@ -60,7 +66,7 @@ public class CartItemServiceImpl implements CartItemService {
             for (CartItemsDTO itemDto : cartDto.getCartItems()) {
                 Product product = masterDao.getProductRepo()
                         .findByproductIDAndStatus(itemDto.getProductId(), Status.ACTIVE)
-                        .orElseThrow(() -> new RuntimeException("Product not found: ID " + itemDto.getProductId()));
+                        .orElseThrow(() -> new ProductNotFound(ErrorMsg.PRODUCT_NOT_FOUND));
 
                 double unitPrice = product.getPrice();
                 int quantityToAdd = itemDto.getQuantity();
@@ -94,7 +100,7 @@ public class CartItemServiceImpl implements CartItemService {
             cartDao.saveCart(cart);
 
             return new ResponseModel(HttpStatus.OK,
-                    CartResponseDto.responseDto(lastProcessedItem), "Item(s) added to cart");
+                    CartResponseDto.responseDto(lastProcessedItem), SuccessMsg.CART_ITEM_ADDED);
 
         } catch (RuntimeException e) {
             return new ResponseModel(
@@ -102,39 +108,34 @@ public class CartItemServiceImpl implements CartItemService {
                     null,
                     e.getMessage()
             );
-        }catch (Exception e) {
+        } catch (Exception e) {
             return new ResponseModel(
                     HttpStatus.INTERNAL_SERVER_ERROR,
                     null,
-                    "Something went wrong: " + e.getMessage());
+                    ErrorMsg.SERVER_ERROR + "\n " + e.getMessage());
         }
     }
-
 
 
     @Override
     public ResponseModel getCartByUserId(Long userId) {
         try {
-            Optional<User> user = masterDao.getUserRepository().findByUserIdAndStatus(userId, Status.ACTIVE);
-
-            if (user.isEmpty()) {
-                return new ResponseModel(HttpStatus.NOT_FOUND, null, "User not found");
-            }
+            User user = masterDao.getUserRepository().findByUserIdAndStatus(userId, Status.ACTIVE).orElseThrow(() -> new UserNotFound(ErrorMsg.USER_NOT_FOUND));
 
             List<CartItem> cartList = cartItemDao.findByUserId(userId);
 
             if (cartList.isEmpty()) {
-                return new ResponseModel(HttpStatus.NOT_FOUND, null, "Cart not found");
+                return new ResponseModel(HttpStatus.NOT_FOUND, null, ErrorMsg.CART_NOT_FOUND);
             }
 
             List<CartResponseDto> response = cartList.stream()
                     .map(CartResponseDto::responseDto)
                     .toList();
 
-            return new ResponseModel(HttpStatus.OK, response, "Cart items retrieved");
+            return new ResponseModel(HttpStatus.OK, response, SuccessMsg.CART_FETCHED_SUCCESSFULLY);
 
         } catch (Exception e) {
-            return new ResponseModel(HttpStatus.INTERNAL_SERVER_ERROR, null, "Error: " + e.getMessage());
+            return new ResponseModel(HttpStatus.INTERNAL_SERVER_ERROR, null, ErrorMsg.SERVER_ERROR+"\n " + e.getMessage());
         }
     }
 
@@ -144,17 +145,12 @@ public class CartItemServiceImpl implements CartItemService {
     public ResponseModel removeCartItem(Long cartItemId) {
         try {
             // Find the cart item
-            Optional<CartItem> cartItemOpt = cartItemDao.findByIdCartItems(cartItemId);
+            CartItem cartItem = cartItemDao.findByIdCartItems(cartItemId).orElseThrow(() -> new CartNotFound(ErrorMsg.CART_NOT_FOUND));
 
-            if (cartItemOpt.isEmpty()) {
-                return new ResponseModel(HttpStatus.NOT_FOUND, null, "Cart item not found");
-            }
-
-            CartItem cartItem = cartItemOpt.get();
             Cart cart = cartItem.getCart();
 
             if (cart == null || cartDao.findById(cart.getCartId()).isEmpty()) {
-                return new ResponseModel(HttpStatus.NOT_FOUND, null, "Cart not found");
+                return new ResponseModel(HttpStatus.NOT_FOUND, null, ErrorMsg.CART_NOT_FOUND);
             }
 
             Double newTotal = cart.getTotalAmount() - cartItem.getPrice();
@@ -164,10 +160,10 @@ public class CartItemServiceImpl implements CartItemService {
             // Remove item
             cartItemDao.deleteByIdCartItems(cartItem.getCartItemsId());
 
-            return new ResponseModel(HttpStatus.OK, null, "Item removed from cart");
+            return new ResponseModel(HttpStatus.OK, null, SuccessMsg.CART_DELETED);
 
         } catch (Exception e) {
-            return new ResponseModel(HttpStatus.INTERNAL_SERVER_ERROR, null, "Error: " + e.getMessage());
+            return new ResponseModel(HttpStatus.INTERNAL_SERVER_ERROR, null, ErrorMsg.SERVER_ERROR+"\n " + e.getMessage());
         }
     }
 
@@ -175,30 +171,22 @@ public class CartItemServiceImpl implements CartItemService {
     @Override
     public ResponseModel clearCartByUserId(Long userId) {
         try {
-            Optional<User> user = masterDao.getUserRepository().findByUserIdAndStatus(userId, Status.ACTIVE);
-            if (user.isEmpty()) {
-                return new ResponseModel(HttpStatus.NOT_FOUND, null, "User not found");
-            }
+            User user = masterDao.getUserRepository().findByUserIdAndStatus(userId, Status.ACTIVE).orElseThrow(() -> new UserNotFound(ErrorMsg.USER_NOT_FOUND));
+            Cart cart = cartDao.findByUserIdAndStatus(userId, Status.ACTIVE).orElseThrow(() -> new CartNotFound(ErrorMsg.CART_NOT_FOUND));
 
-            Optional<Cart> cartOpt = cartDao.findByUserIdAndStatus(userId, Status.ACTIVE);
-            if (cartOpt.isEmpty()) {
-                return new ResponseModel(HttpStatus.NOT_FOUND, null, "Cart not found");
-            }
-
-            Cart cart = cartOpt.get();
             List<CartItem> userCart = cartItemDao.findByCartId(cart.getCartId());
 
             if (userCart.isEmpty()) {
-                return new ResponseModel(HttpStatus.NO_CONTENT, null, "Cart already empty");
+                return new ResponseModel(HttpStatus.NO_CONTENT, null, SuccessMsg.CART_EMPTY);
             }
 
             cartItemDao.deleteAllCartItems(userCart);
             cartDao.deleteByIdCart(cart.getCartId());
 
-            return new ResponseModel(HttpStatus.OK, null, "Cart cleared successfully");
+            return new ResponseModel(HttpStatus.OK, null, SuccessMsg.CART_CLEARED);
 
         } catch (Exception e) {
-            return new ResponseModel(HttpStatus.INTERNAL_SERVER_ERROR, null, "Error: " + e.getMessage());
+            return new ResponseModel(HttpStatus.INTERNAL_SERVER_ERROR, null, ErrorMsg.SERVER_ERROR+"\n " + e.getMessage());
         }
     }
 
@@ -210,16 +198,12 @@ public class CartItemServiceImpl implements CartItemService {
                 return new ResponseModel(HttpStatus.BAD_REQUEST, null, "Quantity must be greater than 0");
             }
 
-            Optional<CartItem> cartItemOpt = cartItemDao.findByIdCartItems(cartItemId);
-            if (cartItemOpt.isEmpty()) {
-                return new ResponseModel(HttpStatus.NOT_FOUND, null, "Cart item not found");
-            }
+            CartItem cartItem = cartItemDao.findByIdCartItems(cartItemId).orElseThrow(() -> new CartNotFound(ErrorMsg.CART_NOT_FOUND));
 
-            CartItem cartItem = cartItemOpt.get();
             Cart cart = cartItem.getCart();
 
             if (cart == null || cartDao.findById(cart.getCartId()).isEmpty()) {
-                return new ResponseModel(HttpStatus.NOT_FOUND, null, "Cart not found");
+                return new ResponseModel(HttpStatus.NOT_FOUND, null, ErrorMsg.CART_NOT_FOUND);
             }
 
             double unitPrice = cartItem.getProduct().getPrice();
@@ -232,7 +216,7 @@ public class CartItemServiceImpl implements CartItemService {
 
             // Update cart total
             double updatedCartTotal = (cart.getTotalAmount() - oldItemPrice) + newItemPrice;
-            cart.setTotalAmount(Math.max(updatedCartTotal,0.0));
+            cart.setTotalAmount(Math.max(updatedCartTotal, 0.0));
 
             // Save updates
             cartDao.saveCart(cart);
@@ -241,7 +225,7 @@ public class CartItemServiceImpl implements CartItemService {
             return new ResponseModel(HttpStatus.OK, CartResponseDto.responseDto(updatedItem), "Item quantity updated");
 
         } catch (Exception e) {
-            return new ResponseModel(HttpStatus.INTERNAL_SERVER_ERROR, null, "Error: " + e.getMessage());
+            return new ResponseModel(HttpStatus.INTERNAL_SERVER_ERROR, null, ErrorMsg.SERVER_ERROR+"\n " + e.getMessage());
         }
     }
 }

@@ -24,5 +24,7 @@ D:\Ecom\CommonEntity\CommonEntity\src\main\java\com\ecom\CommonEntity\entity\Use
 D:\Ecom\CommonEntity\CommonEntity\src\main\java\com\ecom\CommonEntity\Enum\OrderStatus.java
 D:\Ecom\CommonEntity\CommonEntity\src\main\java\com\ecom\CommonEntity\Enum\Role.java
 D:\Ecom\CommonEntity\CommonEntity\src\main\java\com\ecom\CommonEntity\Enum\Status.java
+D:\Ecom\CommonEntity\CommonEntity\src\main\java\com\ecom\CommonEntity\model\ErrorMsg.java
 D:\Ecom\CommonEntity\CommonEntity\src\main\java\com\ecom\CommonEntity\model\pageModel.java
 D:\Ecom\CommonEntity\CommonEntity\src\main\java\com\ecom\CommonEntity\model\ResponseModel.java
+D:\Ecom\CommonEntity\CommonEntity\src\main\java\com\ecom\CommonEntity\model\SuccessMsg.java

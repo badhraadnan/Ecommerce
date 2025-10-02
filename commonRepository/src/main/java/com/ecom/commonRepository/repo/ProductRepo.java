@@ -3,10 +3,13 @@ package com.ecom.commonRepository.repo;
 import com.ecom.CommonEntity.Enum.Status;
 import com.ecom.CommonEntity.dto.productFeedDto;
 import com.ecom.CommonEntity.entity.Product;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+
 
 
 import java.util.List;
@@ -24,10 +27,12 @@ public interface ProductRepo extends JpaRepository<Product, Long> {
             "FROM product AS p " +
             "JOIN category AS c ON p.cat_id = c.catid " +
             "WHERE p.status = 'ACTIVE' AND c.status = 'ACTIVE' " +
-            "ORDER BY p.productid ASC " +
-            "LIMIT :page, :size",
+            "ORDER BY p.productid ASC",
+            countQuery = "SELECT COUNT(*) FROM product p JOIN category c ON p.cat_id = c.catid " +
+                    "WHERE p.status = 'ACTIVE' AND c.status = 'ACTIVE'",
             nativeQuery = true)
-    List<productFeedDto> getProductFeed(@Param("page") int page, @Param("size") int size);
+    Page<productFeedDto> getProductFeed(Pageable pageable);
+
 
     @Query(value = "SELECT p.productid AS productId, p.name AS productName, " +
             "c.catid , c.name , " +

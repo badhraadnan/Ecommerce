@@ -4,6 +4,8 @@ import com.ecom.CommonEntity.Enum.Status;
 import com.ecom.CommonEntity.dto.productFeedDto;
 import com.ecom.CommonEntity.entity.Product;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -36,8 +38,8 @@ import java.util.Optional;
         }
 
 
-        public List<productFeedDto> getProductFeed(int page, int size) {
-            return masterDAO.getProductRepo().getProductFeed(page, size);
+        public Page<productFeedDto> getProductFeed(Pageable pageable) {
+            return masterDAO.getProductRepo().getProductFeed(pageable);
         }
 
         public List<Object[]> getProductByCategory(int id){

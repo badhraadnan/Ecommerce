@@ -3,7 +3,9 @@ package com.ecom.UserService.service.impl;
 import com.ecom.CommonEntity.Enum.Status;
 import com.ecom.CommonEntity.dto.UserDto;
 import com.ecom.CommonEntity.entity.User;
+import com.ecom.CommonEntity.model.ErrorMsg;
 import com.ecom.CommonEntity.model.ResponseModel;
+import com.ecom.CommonEntity.model.SuccessMsg;
 import com.ecom.UserService.exception.UserNotFoundException;
 import com.ecom.UserService.service.UserService;
 import com.ecom.commonRepository.dao.UserDao;
@@ -23,7 +25,6 @@ public class userServiceImpl implements UserService {
     private UserDao userDAO;
 
 
-
     //Get All Users  --Admin User
     @Override
     public ResponseModel getAllUsers() {
@@ -34,7 +35,7 @@ public class userServiceImpl implements UserService {
                     .map(UserDto::toDto)
                     .toList();
 
-            return new ResponseModel(HttpStatus.OK, dto, "Success");
+            return new ResponseModel(HttpStatus.OK, dto, SuccessMsg.USER_GET_SUCCESS);
         }
         return null;
     }
@@ -44,21 +45,18 @@ public class userServiceImpl implements UserService {
     @Override
     public ResponseModel updateUser(UserDto userDto) {
         try {
-            Optional<User> existUser = userDAO.userFindByIdAndStatus(userDto.getUserId(), Status.ACTIVE);
-            //Optional<User> User =userDAO.findByEmailORMobile(userDto.getEmail(), userDto.getMobile());
-            if (existUser.isPresent()) {
-              //  User user = existUser.get();
+            User existUser = userDAO.userFindByIdAndStatus(userDto.getUserId(), Status.ACTIVE)
+                    .orElseThrow(() -> new UserNotFoundException(ErrorMsg.USER_NOT_FOUND));
 
-                UserDto.updateUser(userDto,existUser.get());
-                User saveUser = userDAO.saveUser(existUser.get());
 
-                return new ResponseModel(HttpStatus.OK, UserDto.toDto(saveUser), "User Updated Successfully");
-            }else {
-            return new ResponseModel(HttpStatus.NOT_FOUND, null, "User Not Exist");
-            }
-            } catch (Exception e) {
+            UserDto.updateUser(userDto, existUser);
+            User saveUser = userDAO.saveUser(existUser);
+
+            return new ResponseModel(HttpStatus.OK, UserDto.toDto(saveUser), SuccessMsg.USER_UPDATED);
+
+        } catch (Exception e) {
             e.printStackTrace();
-            return new ResponseModel(HttpStatus.INTERNAL_SERVER_ERROR, null, "User Not Updated due to Some Error");
+            return new ResponseModel(HttpStatus.INTERNAL_SERVER_ERROR, null, ErrorMsg.SERVER_ERROR +"\n" + e.getMessage());
         }
     }
 
@@ -67,23 +65,19 @@ public class userServiceImpl implements UserService {
     @Override
     public ResponseModel blockUser(Long userId) {
         try {
-            Optional<User> existUser = userDAO.userFindById(userId);
+            User user = userDAO.userFindById(userId).orElseThrow(() -> new UserNotFoundException(ErrorMsg.USER_NOT_FOUND));
 
-            if (existUser.isPresent()) {
-                User user = existUser.get();
-
-                if (user.getStatus() == Status.ACTIVE) {
-                    user.setStatus(Status.INACTIVE);
-                } else {
-                    user.setStatus(Status.ACTIVE);
-                }
+            if (user.getStatus() == Status.ACTIVE) {
+                user.setStatus(Status.INACTIVE);
                 userDAO.saveUser(user);
-                return new ResponseModel(HttpStatus.OK, null, "User Block Successfully");
+                return new ResponseModel(HttpStatus.OK, null, SuccessMsg.USER_BLOCKED);
             }
-            return new ResponseModel(HttpStatus.NOT_FOUND, null, "User Not Exist");
+            user.setStatus(Status.ACTIVE);
+            userDAO.saveUser(user);
+            return new ResponseModel(HttpStatus.OK, null, SuccessMsg.USER_UNBLOCKED);
         } catch (Exception e) {
             e.printStackTrace();
-            return new ResponseModel(HttpStatus.INTERNAL_SERVER_ERROR, null, "User Not Block Due to Some Error");
+            return new ResponseModel(HttpStatus.INTERNAL_SERVER_ERROR, null, ErrorMsg.SERVER_ERROR +"\n" + e.getMessage());
         }
     }
 
@@ -91,34 +85,28 @@ public class userServiceImpl implements UserService {
     @Override
     public ResponseModel userFindById(long userId) {
 
-            Optional<User> existUser = userDAO.findByUserIdAndStatus(userId, Status.ACTIVE);
-            if (existUser.isPresent()) {
-                User user = existUser.get();
+        User existUser = userDAO.findByUserIdAndStatus(userId, Status.ACTIVE).orElseThrow(() -> new UserNotFoundException(ErrorMsg.USER_NOT_FOUND));
 
-                return new ResponseModel(HttpStatus.OK, UserDto.toDto(user), "User Found");
-            }
-            throw new UserNotFoundException("User Not Exist");
+        User user = existUser;
+        return new ResponseModel(HttpStatus.OK, UserDto.toDto(user), SuccessMsg.USER_GET_SUCCESS);
+
 
     }
 
     //Delete User  --User Side
     @Override
     public ResponseModel deleteUser(Long userId) {
-       try {
-           Optional<User> existUser = userDAO.userFindById(userId);
-           if (existUser.isPresent()) {
-               userDAO.deleteUser(userId);
-               return new ResponseModel(HttpStatus.OK, null, "User Deleted Successfully");
-           } else {
-               return new ResponseModel(HttpStatus.NOT_FOUND, null, "User Not Exist");
-           }
-       } catch (Exception e) {
-           e.printStackTrace();
-           return new ResponseModel(HttpStatus.INTERNAL_SERVER_ERROR,null,"User Not Deleted Due to some Error");
-       }
+        try {
+            User existUser = userDAO.userFindById(userId).orElseThrow(() -> new UserNotFoundException(ErrorMsg.USER_NOT_FOUND));
+
+            userDAO.deleteUser(userId);
+            return new ResponseModel(HttpStatus.OK, null, SuccessMsg.USER_DELETED);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return new ResponseModel(HttpStatus.INTERNAL_SERVER_ERROR, null, ErrorMsg.SERVER_ERROR +"\n" + e.getMessage());
+        }
     }
-
-
 
 
 }
